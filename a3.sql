@@ -80,6 +80,7 @@ SELECT DISTINCT
 FROM Activity;
 
 -- 11. Game Play Analysis II
+-- Ques unavailable
 
 -- 12. Rank Scores
 SELECT score, DENSE_RANK() OVER (
@@ -89,3 +90,65 @@ FROM Scores
 ORDER BY score DESC;
 
 -- 13. Consecutive Numbers
+
+WITH x AS (
+    SELECT id, num,
+        LAG(num, 1) OVER (ORDER BY id) AS prev1,
+        LAG(num, 2) OVER (ORDER BY id) AS prev2
+    FROM Logs
+)
+SELECT DISTINCT num AS ConsecutiveNums
+FROM x
+WHERE num = prev1 AND num = prev2;
+
+-- 14. Exchange Seats
+SELECT id,
+    CASE
+        WHEN id % 2 = 1 THEN
+            COALESCE(LEAD(student) OVER (ORDER BY id), student)
+        ELSE
+            LAG(student) OVER (ORDER BY id)
+    END AS student
+FROM Seat
+ORDER BY id;
+
+-- 15. Second Highest Salary
+WITH Ranked AS (SELECT salary,
+        DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk
+    FROM Employee
+)
+SELECT MAX(salary) AS SecondHighestSalary
+FROM Ranked
+WHERE rnk = 2;
+
+-- 16. Nth Highest Salary
+
+-- 17. Department Highest Salary
+WITH Ranked AS (
+    SELECT id, name, salary, departmentId,
+        DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rnk
+    FROM Employee
+)
+SELECT
+    d.name AS Department, r.name AS Employee, r.salary AS Salary
+FROM Ranked r
+JOIN Department d
+    ON r.departmentId = d.id
+WHERE r.rnk = 1;
+
+-- 18. Game Play Analysis IV
+WITH x AS (
+    SELECT player_id, event_date,
+        MIN(event_date) OVER (PARTITION BY player_id) AS first_login
+    FROM Activity
+)
+SELECT
+    ROUND(1.0 * COUNT(DISTINCT CASE
+            WHEN event_date = DATEADD(day, 1, first_login)
+            THEN player_id
+        END)/ COUNT(DISTINCT player_id), 2
+    ) AS fraction
+FROM x;
+
+-- 19. User Activity for the Past 30 Days I
+-- 20. Department Top Three Salaries 
